@@ -1,3 +1,4 @@
+
 server:
   port: 8080
 
@@ -13,9 +14,6 @@ spring:
     nacos:
       discovery:
         server-addr: 192.168.100.128:8848
-  mvc:
-    pathmatch:
-      matching-strategy: ANT_PATH_MATCHER
     gateway:
       routes:
         - id: mailadmin
@@ -30,6 +28,9 @@ spring:
           uri: lb://mailuser
           predicates:
             - Path=/user/**
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
 
 
 

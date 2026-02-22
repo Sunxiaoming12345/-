@@ -53,10 +53,19 @@ public class OrdersController {
     //查询我的订单
     @GetMapping("/myOrders")
     @ApiOperation(value = "查询我的订单", notes = "分页查询当前用户的订单列表")
-    public Result<PageResult> myOrders(@ApiParam(name = "myOrdersPageQueryDTO", value = "订单分页查询参数", required = true) @RequestBody MyOrdersPageQueryDTO myOrdersPageQueryDTO) {
+    public Result<PageResult> myOrders(@ApiParam(name = "myOrdersPageQueryDTO", value = "订单分页查询参数", required = true) @ModelAttribute MyOrdersPageQueryDTO myOrdersPageQueryDTO) {
         PageResult pageResult = ordersService.myOrders(myOrdersPageQueryDTO);
 
         return Result.success(pageResult);
+    }
+
+    // 创建订单
+    @PostMapping("/create")
+    @ApiOperation(value = "创建订单", notes = "根据购物车商品创建新订单")
+    public Result createOrder(@ApiParam(name = "orderData", value = "订单创建信息", required = true) @RequestBody Object orderData) {
+        // 这里可以根据实际需求实现订单创建逻辑
+        // 暂时返回成功，后续可以扩展
+        return Result.success();
     }
 
 }

@@ -6,17 +6,9 @@
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/gateway/pom.xml" />
         <option value="$PROJECT_DIR$/common/pom.xml" />
-        <option value="$PROJECT_DIR$/mail-admin/pom.xml" />
         <option value="$PROJECT_DIR$/mailadmin/pom.xml" />
         <option value="$PROJECT_DIR$/mailuser/pom.xml" />
-        <option value="$PROJECT_DIR$/products/pom.xml" />
       </list>
-    </option>
-    <option name="ignoredFiles">
-      <set>
-        <option value="$PROJECT_DIR$/mail-admin/pom.xml" />
-        <option value="$PROJECT_DIR$/products/pom.xml" />
-      </set>
     </option>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="17" project-jdk-type="JavaSDK">
