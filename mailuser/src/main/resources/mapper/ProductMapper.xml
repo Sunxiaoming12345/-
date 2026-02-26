@@ -34,7 +34,7 @@
             create_time AS createTime,
             update_time AS updateTime
         FROM
-            category
+            categories
         ORDER BY
             sort ASC
     </select>
