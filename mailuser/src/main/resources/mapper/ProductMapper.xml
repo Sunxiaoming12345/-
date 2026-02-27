@@ -61,4 +61,27 @@
             create_time DESC
     </select>
 
+    <!-- 根据ID获取商品详情 -->
+    <select id="getProductById" resultType="com.example.mailuser.vo.ProductVO">
+        SELECT
+            p.id,
+            p.name,
+            p.description,
+            p.image_url AS imageUrl,
+            p.category_id AS categoryId,
+            c.name AS categoryName,
+            p.price,
+            p.stock,
+            p.status,
+            p.create_time AS createTime,
+            p.update_time AS updateTime
+        FROM
+            products p
+        LEFT JOIN
+            categories c ON p.category_id = c.id
+        WHERE
+            p.id = #{id}
+          AND p.status = 1
+    </select>
+
 </mapper>

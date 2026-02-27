@@ -59,4 +59,17 @@ public class ProductServiceImpl implements ProductService {
         log.info("根据分类ID获取商品列表，分类ID：{}，商品数量：{}", categoryId, products.size());
         return products;
     }
+
+    /**
+     * 根据ID获取商品详情
+     *
+     * @param id 商品ID
+     * @return 商品详情
+     */
+    @Override
+    public ProductVO getProductById(Long id) {
+        ProductVO product = productMapper.getProductById(id);
+        log.info("根据ID获取商品详情，商品ID：{}，商品：{}", id, product);
+        return product;
+    }
 }

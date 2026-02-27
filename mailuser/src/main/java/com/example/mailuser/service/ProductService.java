@@ -33,4 +33,12 @@ public interface ProductService {
      * @return 商品列表
      */
     List<ProductVO> getProductsByCategoryId(Integer categoryId);
+
+    /**
+     * 根据ID获取商品详情
+     *
+     * @param id 商品ID
+     * @return 商品详情
+     */
+    ProductVO getProductById(Long id);
 }

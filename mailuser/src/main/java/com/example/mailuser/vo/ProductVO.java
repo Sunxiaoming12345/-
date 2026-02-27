@@ -43,6 +43,11 @@ public class ProductVO {
     private Integer categoryId;
 
     /**
+     * 商品分类名称
+     */
+    private String categoryName;
+
+    /**
      * 商品价格
      */
     private BigDecimal price;

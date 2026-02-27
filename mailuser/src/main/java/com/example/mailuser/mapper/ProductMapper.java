@@ -36,4 +36,12 @@ public interface ProductMapper {
      * @return 商品列表
      */
     List<ProductVO> getProductsByCategoryId(@Param("categoryId") Integer categoryId);
+
+    /**
+     * 根据ID获取商品详情
+     *
+     * @param id 商品ID
+     * @return 商品详情
+     */
+    ProductVO getProductById(@Param("id") Long id);
 }

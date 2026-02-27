@@ -1,9 +1,11 @@
 package com.example.mailuser.service.impl;
 
 import com.example.mailuser.dto.AddCartDTO;
+import com.example.mailuser.mapper.ProductMapper;
 import com.example.mailuser.mapper.ShopCartMapper;
 import com.example.mailuser.service.ShopCartService;
 import com.example.mailuser.vo.CartVO;
+import com.example.mailuser.vo.ProductVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,9 @@ public class ShopCartServiceImpl implements ShopCartService {
     @Autowired
     private ShopCartMapper shopCartMapper;
 
+    @Autowired
+    private ProductMapper productMapper;
+
     /**
      * 添加商品到购物车
      *
@@ -33,6 +38,19 @@ public class ShopCartServiceImpl implements ShopCartService {
     public void addCart(Long userId, AddCartDTO addCartDTO) {
         Long productId = addCartDTO.getProductId();
         Integer quantity = addCartDTO.getQuantity();
+
+        // 检查商品是否存在
+        ProductVO product = productMapper.getProductById(productId);
+        if (product == null) {
+            log.error("商品不存在：productId={}", productId);
+            throw new RuntimeException("商品不存在");
+        }
+
+        // 检查商品库存
+        if (product.getStock() < quantity) {
+            log.error("商品库存不足：productId={}, 库存={}, 需求={}", productId, product.getStock(), quantity);
+            throw new RuntimeException("商品库存不足");
+        }
 
         // 检查商品是否已经在购物车中
         int count = shopCartMapper.checkCartItem(userId, productId);

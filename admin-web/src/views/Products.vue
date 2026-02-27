@@ -74,7 +74,7 @@
             <img v-if="form.imageUrl" :src="form.imageUrl" class="avatar" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>
-          <el-input v-model="form.imageUrl" placeholder="图片 URL" style="margin-top: 10px" />
+          <el-input v-model="form.imageUrl" placeholder="图片 URL" style="margin-top: 10px" readonly />
         </el-form-item>
         <el-form-item label="描述" prop="description">
           <el-input v-model="form.description" type="textarea" rows="3" placeholder="商品描述" />
