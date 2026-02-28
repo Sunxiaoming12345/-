@@ -2,7 +2,6 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.example.mailuser.mapper.UserOrdersMapper">
 
-
     <select id="PageQuery" resultType="com.example.mailuser.entity.Orders">
         select * from orders
         <where>
@@ -16,6 +15,7 @@
                 and name like concat('%',#{name},'%')
             </if>
         </where>
+        order by create_time desc
     </select>
 
     <select id="getOrderByIdAndUserId" resultType="com.example.mailuser.entity.Orders">
@@ -37,4 +37,26 @@
             update_time = CURRENT_TIMESTAMP
         where order_id = #{orderId}
     </update>
+    
+    <!-- 保存订单项 -->
+    <insert id="saveOrderItem">
+        insert into order_items (order_id, product_id, product_name, product_price, quantity, subtotal) 
+        values (#{orderId}, #{productId}, #{productName}, #{productPrice}, #{quantity}, #{subtotal})
+    </insert>
+    
+    <!-- 根据订单ID查询订单项列表（关联商品表获取图片） -->
+    <select id="selectOrderItemsByOrderId" resultType="com.example.mailadmin.entity.OrderItems">
+        select 
+            oi.item_id as itemId,
+            oi.order_id as orderId,
+            oi.product_id as productId,
+            oi.product_name as productName,
+            oi.product_price as productPrice,
+            oi.quantity as quantity,
+            oi.subtotal as subtotal,
+            p.image_url as imageUrl 
+        from order_items oi
+        left join products p on oi.product_id = p.id
+        where oi.order_id = #{orderId}
+    </select>
 </mapper>

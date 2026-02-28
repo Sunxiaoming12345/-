@@ -19,8 +19,8 @@ public class UserInfoInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        System.out.println("用户拦截器 is working!");
-        log.info("用户拦截器 is working!");
+       // System.out.println("用户拦截器 is working!");
+        // log.info("用户拦截器 is working!");
         // 获取登录用户信息
         String userInfo = request.getHeader("user-info");
         if (StringUtils.isNotBlank(userInfo)) {

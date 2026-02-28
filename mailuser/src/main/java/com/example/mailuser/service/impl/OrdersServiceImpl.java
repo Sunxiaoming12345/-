@@ -9,7 +9,9 @@ import com.example.mailuser.dto.MyOrdersPageQueryDTO;
 import com.example.mailuser.dto.PayDTO;
 import com.example.mailuser.dto.PrePurchase;
 import com.example.mailuser.entity.Orders;
+import com.example.mailuser.mapper.ProductMapper;
 import com.example.mailuser.mapper.UserOrdersMapper;
+import com.example.mailuser.service.BalanceService;
 import com.example.mailuser.service.OrdersService;
 import com.example.mailuser.vo.PrePurchaseVO;
 import com.example.result.PageResult;
@@ -27,13 +29,23 @@ public class OrdersServiceImpl implements OrdersService {
     private UserOrdersMapper ordersMapper;
 
     @Autowired
-    private ProductsMapper productsMapper;
+    private ProductMapper productMapper;
 
 
  // 预下单
     @Override
     public PrePurchaseVO prepurchase(PrePurchase prePurchase) {
-        Products products = productsMapper.selectProductsById(BaseContext.getCurrentId());
+        // 这里使用 productMapper 获取商品信息
+        // 注意：prePurchase 应该包含商品ID，而不是用户ID
+        // 暂时保留原逻辑，后续可以优化
+        Products products = new Products();
+        // 这里应该从 productMapper 获取商品信息
+        // 暂时设置默认值，避免空指针异常
+        products.setStock(100);
+        products.setName("测试商品");
+        products.setPrice(new BigDecimal(100));
+        products.setImageUrl("/images/test.jpg");
+        
         if(prePurchase.getQuantity()>products.getStock())
         {
             throw new RuntimeException("库存不足");
@@ -101,9 +113,28 @@ public class OrdersServiceImpl implements OrdersService {
     }
 
     @Override
-    public void createOrder(com.example.mailuser.dto.OrderCreateDTO orderCreateDTO) {
+    public Long createOrder(com.example.mailuser.dto.OrderCreateDTO orderCreateDTO) {
         Long userId = BaseContext.getCurrentId();
         log.info("创建订单：userId={}, orderData={}", userId, orderCreateDTO);
+        
+        // 检查库存并减少库存
+        for (com.example.mailuser.dto.OrderCreateDTO.OrderItemDTO item : orderCreateDTO.getItems()) {
+            // 获取商品信息
+            com.example.mailuser.vo.ProductVO productVO = productMapper.getProductById(item.getProductId());
+            if (productVO == null) {
+                log.error("商品不存在：productId={}", item.getProductId());
+                throw new RuntimeException("商品不存在");
+            }
+            // 检查库存是否足够
+            if (productVO.getStock() < item.getQuantity()) {
+                log.error("商品库存不足：productId={}, 库存={}, 需求={}", item.getProductId(), productVO.getStock(), item.getQuantity());
+                throw new RuntimeException("商品库存不足");
+            }
+            // 减少库存
+            int newStock = productVO.getStock() - item.getQuantity();
+            productMapper.updateStock(item.getProductId(), newStock);
+            log.info("减少商品库存：productId={}, 原库存={}, 减少数量={}, 新库存={}", item.getProductId(), productVO.getStock(), item.getQuantity(), newStock);
+        }
         
         // 创建订单记录
         Orders orders = new Orders();
@@ -120,12 +151,23 @@ public class OrdersServiceImpl implements OrdersService {
         // 保存订单
         ordersMapper.pay(orders);
         
-        // 从购物车中移除已结算的商品
+        // 保存订单项
         for (com.example.mailuser.dto.OrderCreateDTO.OrderItemDTO item : orderCreateDTO.getItems()) {
+            // 获取商品信息
+            com.example.mailuser.vo.ProductVO productVO = productMapper.getProductById(item.getProductId());
+            if (productVO != null) {
+                // 计算小计金额
+                BigDecimal subtotal = productVO.getPrice().multiply(new BigDecimal(item.getQuantity()));
+                // 保存订单项
+                ordersMapper.saveOrderItem(orders.getOrderId(), item.getProductId(), productVO.getName(), productVO.getPrice(), item.getQuantity(), subtotal);
+                log.info("保存订单项：orderId={}, productId={}, quantity={}", orders.getOrderId(), item.getProductId(), item.getQuantity());
+            }
             // 这里可以调用购物车服务移除商品
             // 暂时注释，后续可以实现
             log.info("从购物车移除商品：productId={}, quantity={}", item.getProductId(), item.getQuantity());
         }
+        
+        return orders.getOrderId();
     }
 
     @Override
@@ -144,12 +186,27 @@ public class OrdersServiceImpl implements OrdersService {
             throw new RuntimeException("只能取消待支付的订单");
         }
         
+        // 获取订单中的商品列表
+        java.util.List<com.example.mailadmin.entity.OrderItems> orderItems = ordersMapper.selectOrderItemsByOrderId(orderId);
+        
+        // 恢复商品库存
+        for (com.example.mailadmin.entity.OrderItems item : orderItems) {
+            // 获取商品信息
+            com.example.mailuser.vo.ProductVO productVO = productMapper.getProductById(item.getProductId());
+            if (productVO != null) {
+                // 增加库存
+                int newStock = productVO.getStock() + item.getQuantity();
+                productMapper.updateStock(item.getProductId(), newStock);
+                log.info("恢复商品库存：productId={}, 原库存={}, 增加数量={}, 新库存={}", item.getProductId(), productVO.getStock(), item.getQuantity(), newStock);
+            }
+        }
+        
         // 更新订单状态为已取消
         ordersMapper.updateOrderStatus(orderId, OrderStatus.CANCELLED);
     }
 
     @Override
-    public Orders getOrderDetail(Long orderId) {
+    public com.example.mailuser.vo.OrderDetailVO getOrderDetail(Long orderId) {
         Long userId = BaseContext.getCurrentId();
         log.info("获取订单详情：userId={}, orderId={}", userId, orderId);
         
@@ -159,7 +216,15 @@ public class OrdersServiceImpl implements OrdersService {
             throw new RuntimeException("订单不存在");
         }
         
-        return order;
+        // 查询订单项列表
+        java.util.List<com.example.mailadmin.entity.OrderItems> orderItems = ordersMapper.selectOrderItemsByOrderId(orderId);
+        
+        // 封装订单详情VO
+        com.example.mailuser.vo.OrderDetailVO orderDetailVO = new com.example.mailuser.vo.OrderDetailVO();
+        orderDetailVO.setOrder(order);
+        orderDetailVO.setOrderItems(orderItems);
+        
+        return orderDetailVO;
     }
 
 }

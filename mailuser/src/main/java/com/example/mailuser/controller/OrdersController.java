@@ -42,7 +42,7 @@ public class OrdersController {
 
 
     // 支付
-    @PutMapping("/pay")
+    @PostMapping("/pay")
     @ApiOperation(value = "支付订单", notes = "支付订单，更新订单状态为已支付")
     public Result pay(@ApiParam(name = "payDTO", value = "支付信息", required = true) @RequestBody PayDTO payDTO) {
 
@@ -63,9 +63,9 @@ public class OrdersController {
     // 创建订单
     @PostMapping("/create")
     @ApiOperation(value = "创建订单", notes = "根据购物车商品创建新订单")
-    public Result createOrder(@ApiParam(name = "orderData", value = "订单创建信息", required = true) @RequestBody OrderCreateDTO orderData) {
-        ordersService.createOrder(orderData);
-        return Result.success();
+    public Result<Long> createOrder(@ApiParam(name = "orderData", value = "订单创建信息", required = true) @RequestBody OrderCreateDTO orderData) {
+        Long orderId = ordersService.createOrder(orderData);
+        return Result.success(orderId);
     }
 
     // 取消订单
@@ -78,10 +78,10 @@ public class OrdersController {
 
     // 获取订单详情
     @GetMapping("/{id}")
-    @ApiOperation(value = "获取订单详情", notes = "根据订单ID获取订单详情")
-    public Result<Orders> getOrderDetail(@ApiParam(name = "id", value = "订单ID", required = true) @PathVariable Long id) {
-        Orders order = ordersService.getOrderDetail(id);
-        return Result.success(order);
+    @ApiOperation(value = "获取订单详情", notes = "根据订单ID获取订单详情，包含商品信息")
+    public Result<com.example.mailuser.vo.OrderDetailVO> getOrderDetail(@ApiParam(name = "id", value = "订单ID", required = true) @PathVariable Long id) {
+        com.example.mailuser.vo.OrderDetailVO orderDetailVO = ordersService.getOrderDetail(id);
+        return Result.success(orderDetailVO);
     }
 
 }

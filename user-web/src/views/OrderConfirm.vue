@@ -85,6 +85,30 @@
         </div>
       </div>
     </el-loading>
+
+    <!-- 余额支付确认弹窗 -->
+    <el-dialog
+      v-model="balanceDialogVisible"
+      title="余额支付确认"
+      width="400px"
+    >
+      <div class="balance-info">
+        <p class="balance-item">
+          <span>账户当前余额：</span>
+          <span class="balance-amount">¥{{ userBalance.toFixed(2) }}</span>
+        </p>
+        <p class="balance-item">
+          <span>本次支付金额：</span>
+          <span class="payment-amount">¥{{ actualAmount.toFixed(2) }}</span>
+        </p>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="cancelBalancePayment">暂不支付</el-button>
+          <el-button type="primary" @click="confirmBalancePayment">确认支付</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -93,6 +117,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { createOrder, payOrder } from '@/api/orders'
 import { removeCartItem } from '@/api/cart'
+import { getBalance } from '@/api/balance'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
 
@@ -114,6 +139,11 @@ const form = ref({
 
 // 运费
 const shippingFee = ref(0)
+
+// 余额相关
+const balanceDialogVisible = ref(false)
+const userBalance = ref(0)
+const currentOrderId = ref(null)
 
 // 计算商品总价
 const totalPrice = computed(() => {
@@ -150,6 +180,17 @@ const loadUserInfo = async () => {
   }
 }
 
+// 加载用户余额
+const loadUserBalance = async () => {
+  try {
+    const res = await getBalance()
+    userBalance.value = res || 0
+  } catch (error) {
+    console.error('Failed to get balance:', error)
+    userBalance.value = 0
+  }
+}
+
 // 提交订单
 const submitOrder = async () => {
   // 验证表单
@@ -176,25 +217,65 @@ const submitOrder = async () => {
 
     // 调用创建订单接口
     const res = await createOrder(orderData)
+    currentOrderId.value = res
     
     // 从购物车中移除已结算的商品
     for (const item of orderItems.value) {
       await removeCartItem(item.productId)
     }
     
-    // 跳转到支付页面或直接完成支付
-    ElMessage.success('订单创建成功')
-    
     // 清除本地存储的选中商品
     localStorage.removeItem('selectedCartItems')
     
-    // 跳转到订单列表
-    router.push('/orders')
+    // 如果是余额支付，显示确认弹窗
+    if (form.value.paymentMethod === '2') {
+      await loadUserBalance()
+      balanceDialogVisible.value = true
+    } else {
+      // 其他支付方式直接跳转到订单列表
+      ElMessage.success('订单创建成功')
+      router.push('/orders')
+    }
   } catch (error) {
     ElMessage.error('提交订单失败')
     console.error('Failed to submit order:', error)
   } finally {
     loading.value = false
+  }
+}
+
+// 取消余额支付
+const cancelBalancePayment = () => {
+  balanceDialogVisible.value = false
+  // 跳转到订单列表
+  router.push('/orders')
+}
+
+// 确认余额支付
+const confirmBalancePayment = async () => {
+  if (!currentOrderId.value) {
+    ElMessage.error('订单信息错误')
+    return
+  }
+
+  try {
+    loading.value = true
+    
+    // 调用支付接口
+    await payOrder({
+      orderId: currentOrderId.value,
+      paymentMethod: 2
+    })
+    
+    ElMessage.success('支付成功')
+  } catch (error) {
+    ElMessage.error('支付失败')
+    console.error('Failed to pay order:', error)
+  } finally {
+    loading.value = false
+    balanceDialogVisible.value = false
+    // 无论支付成功还是失败，都跳转到订单列表
+    router.push('/orders')
   }
 }
 
@@ -206,6 +287,9 @@ const goBack = () => {
 onMounted(async () => {
   loadOrderItems()
   await loadUserInfo()
+  if (form.value.paymentMethod === '2') {
+    await loadUserBalance()
+  }
 })
 </script>
 
@@ -283,5 +367,34 @@ onMounted(async () => {
   justify-content: flex-end;
   gap: 15px;
   margin-top: 40px;
+}
+
+/* 余额支付确认弹窗样式 */
+.balance-info {
+  padding: 20px 0;
+}
+
+.balance-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.balance-amount {
+  font-weight: bold;
+  color: #1890ff;
+}
+
+.payment-amount {
+  font-weight: bold;
+  color: #ff4d4f;
+}
+
+.dialog-footer {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>

@@ -5,6 +5,7 @@ import com.example.mailuser.entity.Orders;
 import com.github.pagehelper.Page;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
@@ -18,6 +19,7 @@ public interface UserOrdersMapper {
     Orders selectByUserId(long userId);*/
 
    @Insert("insert into orders(user_id, order_number, order_status, payment_method, total_amount, shipping_address, receiver_name, receiver_phone, create_time) values(#{userId},#{orderNumber},#{orderStatus},#{paymentMethod},#{totalAmount},#{shippingAddress},#{receiverName},#{receiverPhone},#{createTime}) ")
+    @Options(useGeneratedKeys = true, keyProperty = "orderId")
     void pay(Orders orders);
 
     Page<Orders> PageQuery(MyOrdersPageQueryDTO myOrdersPageQueryDTO);
@@ -30,4 +32,10 @@ public interface UserOrdersMapper {
 
     // 更新订单支付信息
     void updateOrderForPayment(@Param("orderId") Long orderId, @Param("orderStatus") Integer orderStatus, @Param("paymentMethod") Integer paymentMethod);
+    
+    // 保存订单项
+    void saveOrderItem(@Param("orderId") Long orderId, @Param("productId") Long productId, @Param("productName") String productName, @Param("productPrice") java.math.BigDecimal productPrice, @Param("quantity") Integer quantity, @Param("subtotal") java.math.BigDecimal subtotal);
+    
+    // 根据订单ID查询订单项列表
+    java.util.List<com.example.mailadmin.entity.OrderItems> selectOrderItemsByOrderId(@Param("orderId") Long orderId);
 }

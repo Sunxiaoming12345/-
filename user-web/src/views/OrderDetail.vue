@@ -9,19 +9,19 @@
           <div class="order-info">
             <div class="info-item">
               <span class="label">订单号:</span>
-              <span class="value">{{ order.orderNumber }}</span>
+              <span class="value">{{ order.order.orderNumber }}</span>
             </div>
             <div class="info-item">
               <span class="label">订单状态:</span>
-              <el-tag :type="getStatusType(order.orderStatus)">{{ getStatusText(order.orderStatus) }}</el-tag>
+              <el-tag :type="getStatusType(order.order.orderStatus)">{{ getStatusText(order.order.orderStatus) }}</el-tag>
             </div>
             <div class="info-item">
               <span class="label">下单时间:</span>
-              <span class="value">{{ order.createTime }}</span>
+              <span class="value">{{ order.order.createTime }}</span>
             </div>
             <div class="info-item">
               <span class="label">支付方式:</span>
-              <span class="value">{{ getPaymentMethodText(order.paymentMethod) }}</span>
+              <span class="value">{{ getPaymentMethodText(order.order.paymentMethod) }}</span>
             </div>
           </div>
         </div>
@@ -32,15 +32,15 @@
           <div class="shipping-info">
             <div class="info-item">
               <span class="label">收货人:</span>
-              <span class="value">{{ order.receiverName }}</span>
+              <span class="value">{{ order.order.receiverName }}</span>
             </div>
             <div class="info-item">
               <span class="label">联系电话:</span>
-              <span class="value">{{ order.receiverPhone }}</span>
+              <span class="value">{{ order.order.receiverPhone }}</span>
             </div>
             <div class="info-item">
               <span class="label">收货地址:</span>
-              <span class="value">{{ order.shippingAddress }}</span>
+              <span class="value">{{ order.order.shippingAddress }}</span>
             </div>
           </div>
         </div>
@@ -49,22 +49,33 @@
         <div class="section">
           <h3>商品信息</h3>
           <div class="product-info">
-            <!-- 暂时显示商品数量，后续可以从订单详情中获取具体商品信息 -->
-            <div class="info-item">
-              <span class="label">商品数量:</span>
-              <span class="value">1</span>
+            <div class="product-header">
+              <div class="header-item product-column">商品</div>
+              <div class="header-item price-column">单价</div>
+              <div class="header-item quantity-column">数量</div>
+              <div class="header-item subtotal-column">小计</div>
+            </div>
+            <div v-for="(item, index) in order.orderItems || []" :key="item.itemId" class="product-item" :class="{ 'even': index % 2 === 1 }">
+              <div class="product-column">
+                <img v-if="item.imageUrl" :src="item.imageUrl" style="width: 60px; height: 60px; object-fit: cover; margin-right: 10px;" />
+                <span v-else style="margin-right: 10px; width: 60px; display: inline-block;">-</span>
+                {{ item.productName }}
+              </div>
+              <div class="price-column">¥{{ item.productPrice.toFixed(2) }}</div>
+              <div class="quantity-column">{{ item.quantity }}</div>
+              <div class="subtotal-column">¥{{ item.subtotal.toFixed(2) }}</div>
             </div>
           </div>
         </div>
 
         <!-- 支付方式 -->
-        <div class="section" v-if="order.orderStatus === 0">
+        <div class="section" v-if="order.order.orderStatus === 0">
           <h3>支付方式</h3>
           <div class="payment-method">
             <el-radio-group v-model="paymentMethod">
+              <el-radio label="2">余额支付</el-radio>
               <el-radio label="0">支付宝</el-radio>
-              <el-radio label="1">微信</el-radio>
-              <el-radio label="2">余额</el-radio>
+              <el-radio label="1">微信支付</el-radio>
             </el-radio-group>
           </div>
         </div>
@@ -75,7 +86,7 @@
           <div class="amount-info">
             <div class="info-item">
               <span class="label">订单总金额:</span>
-              <span class="value price">¥{{ order.totalAmount.toFixed(2) }}</span>
+              <span class="value price">¥{{ order.order.totalAmount.toFixed(2) }}</span>
             </div>
           </div>
         </div>
@@ -83,8 +94,8 @@
         <!-- 操作按钮 -->
         <div class="order-actions">
           <el-button @click="goBack">返回订单列表</el-button>
-          <el-button v-if="order.orderStatus === 0" type="success" @click="handlePayOrder(order.orderId, paymentMethod)">支付</el-button>
-          <el-button v-if="order.orderStatus === 0" type="danger" @click="handleCancelOrder(order.orderId)">取消</el-button>
+          <el-button v-if="order.order.orderStatus === 0" type="success" @click="handlePayOrder(order.order.orderId, paymentMethod)">支付</el-button>
+          <el-button v-if="order.order.orderStatus === 0" type="danger" @click="handleCancelOrder(order.order.orderId)">取消</el-button>
         </div>
       </div>
       <div v-else class="empty">
@@ -105,13 +116,22 @@ const router = useRouter()
 const orderId = route.params.id
 const order = ref(null)
 const loading = ref(true)
-const paymentMethod = ref('0') // 默认支付宝
+const paymentMethod = ref('2') // 默认余额支付
 
 const loadOrderDetail = async () => {
   try {
     loading.value = true
     const res = await getOrderDetail(orderId)
     order.value = res
+    // 打印订单详情数据结构，用于调试
+    console.log('Order detail:', res)
+    if (res.orderItems) {
+      console.log('Order items:', res.orderItems)
+      if (res.orderItems.length > 0) {
+        console.log('First order item:', res.orderItems[0])
+        console.log('First order item keys:', Object.keys(res.orderItems[0]))
+      }
+    }
   } catch (error) {
     console.error('Failed to load order detail:', error)
     ElMessage.error('加载订单详情失败')
@@ -132,6 +152,8 @@ const getStatusType = (status) => {
       return 'success'
     case 4:
       return 'danger'
+    case 5:
+      return 'danger'
     default:
       return ''
   }
@@ -142,12 +164,14 @@ const getStatusText = (status) => {
     case 0:
       return '待支付'
     case 1:
-      return '已支付'
+      return '已付款'
     case 2:
-      return '已发货'
+      return '待发货'
     case 3:
-      return '已完成'
+      return '已发货'
     case 4:
+      return '已完成'
+    case 5:
       return '已取消'
     default:
       return status
@@ -264,5 +288,76 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 商品信息样式 */
+.product-info {
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.product-header {
+  display: flex;
+  background-color: #f5f5f5;
+  padding: 10px 20px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.header-item {
+  font-weight: 500;
+  color: #333;
+}
+
+.product-column {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.price-column {
+  width: 100px;
+  text-align: center;
+}
+
+.quantity-column {
+  width: 80px;
+  text-align: center;
+}
+
+.subtotal-column {
+  width: 100px;
+  text-align: center;
+}
+
+.product-item {
+  display: flex;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eaeaea;
+  align-items: center;
+}
+
+.product-item:last-child {
+  border-bottom: none;
+}
+
+.product-item.even {
+  background-color: #f9f9f9;
+}
+
+.product-item img {
+  vertical-align: middle;
+}
+
+.product-item .product-column {
+  font-size: 14px;
+  color: #333;
+}
+
+.product-item .price-column,
+.product-item .quantity-column,
+.product-item .subtotal-column {
+  font-size: 14px;
+  color: #333;
 }
 </style>

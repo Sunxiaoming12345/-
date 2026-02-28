@@ -44,4 +44,12 @@ public interface ProductMapper {
      * @return 商品详情
      */
     ProductVO getProductById(@Param("id") Long id);
+
+    /**
+     * 更新商品库存
+     *
+     * @param id 商品ID
+     * @param stock 库存数量
+     */
+    void updateStock(@Param("id") Long id, @Param("stock") Integer stock);
 }

@@ -84,4 +84,12 @@
           AND p.status = 1
     </select>
 
+    <!-- 更新商品库存 -->
+    <update id="updateStock">
+        update products
+        set stock = #{stock},
+            update_time = now()
+        where id = #{id}
+    </update>
+
 </mapper>

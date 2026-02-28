@@ -23,7 +23,10 @@
     </select>
 
     <select id="selectOrderItemsByOrderId" resultType="com.example.mailadmin.entity.OrderItems">
-        select * from order_items where order_id = #{orderId}
+        select oi.*, p.image_url as imageUrl 
+        from order_items oi
+        left join products p on oi.product_id = p.id
+        where oi.order_id = #{orderId}
     </select>
 
     <select id="selectPaymentByOrderId" resultType="com.example.mailadmin.entity.Payments">

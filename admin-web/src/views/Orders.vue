@@ -5,7 +5,6 @@
       <el-select v-model="query.orderStatus" placeholder="订单状态" clearable style="width: 120px">
         <el-option label="待付款" :value="0" />
         <el-option label="已付款" :value="1" />
-        <el-option label="待发货" :value="2" />
         <el-option label="已发货" :value="3" />
         <el-option label="已完成" :value="4" />
         <el-option label="已取消" :value="5" />
@@ -75,12 +74,8 @@
         <el-form-item label="订单号">{{ currentOrder?.orderNumber }}</el-form-item>
         <el-form-item label="新状态">
           <el-select v-model="statusForm.orderStatus" placeholder="请选择" style="width: 100%">
-            <el-option label="待付款" :value="0" />
-            <el-option label="已付款" :value="1" />
-            <el-option label="待发货" :value="2" />
             <el-option label="已发货" :value="3" />
             <el-option label="已完成" :value="4" />
-            <el-option label="已取消" :value="5" />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">

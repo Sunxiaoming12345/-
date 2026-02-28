@@ -43,7 +43,7 @@ public class MyGlobalFilter implements GlobalFilter, Ordered {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return  response.setComplete();
         }
-        log.info("用户id:{}",userId);
+      //  log.info("用户id:{}",userId);
         String userInfo = userId.toString();
         ServerWebExchange swe = exchange.mutate()
                 .request(builder -> builder.header("user-info", userInfo))

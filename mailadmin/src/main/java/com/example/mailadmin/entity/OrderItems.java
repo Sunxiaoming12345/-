@@ -16,4 +16,5 @@ public class OrderItems {
     private BigDecimal productPrice; // 商品单价
     private Integer quantity;     // 购买数量
     private BigDecimal subtotal;  // 小计金额
+  //  private String imageUrl;      // 商品图片URL
 }
