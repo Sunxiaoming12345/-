@@ -68,4 +68,18 @@ public class BalanceController {
         boolean isEnough = balanceService.checkBalance(userId, amount);
         return Result.success(isEnough);
     }
+
+    /**
+     * 初始化用户余额
+     * 用于用户注册时调用
+     *
+     * @param userId 用户ID
+     * @return 操作结果
+     */
+    @PostMapping("/init")
+    @ApiOperation(value = "初始化用户余额", notes = "为指定用户初始化余额")
+    public Result<Void> initBalance(@ApiParam(name = "userId", value = "用户ID", required = true) @RequestParam Long userId) {
+        balanceService.initBalance(userId);
+        return Result.success();
+    }
 }

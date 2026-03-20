@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-export function getProducts(params) {
+export function getProducts() {
   return request({
     url: '/user/products/recommended',
     method: 'get'
@@ -25,5 +25,13 @@ export function getProductsByCategory(categoryId) {
   return request({
     url: `/user/products/category/${categoryId}`,
     method: 'get'
+  })
+}
+
+export function searchProducts(keyword) {
+  return request({
+    url: '/user/products/search',
+    method: 'get',
+    params: { keyword }
   })
 }

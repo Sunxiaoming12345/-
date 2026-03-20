@@ -43,7 +43,15 @@ public interface ProductMapper {
      * @param id 商品ID
      * @return 商品详情
      */
-    ProductVO getProductById(@Param("id") Long id);
+    ProductVO getProductById(Long id);
+
+    /**
+     * 搜索商品
+     *
+     * @param keyword 搜索关键词
+     * @return 商品列表
+     */
+    List<ProductVO> searchProducts(String keyword);
 
     /**
      * 更新商品库存（用于购买时，防止超卖）

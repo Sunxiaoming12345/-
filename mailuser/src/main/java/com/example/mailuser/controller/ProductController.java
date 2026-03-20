@@ -78,4 +78,17 @@ public class ProductController {
         ProductVO product = productService.getProductById(id);
         return Result.success(product);
     }
+
+    /**
+     * 搜索商品
+     *
+     * @param keyword 搜索关键词
+     * @return 商品列表
+     */
+    @GetMapping("/search")
+    @ApiOperation(value = "搜索商品", notes = "根据关键词搜索商品，支持商品名称和描述的模糊搜索")
+    public Result<List<ProductVO>> searchProducts(@RequestParam String keyword) {
+        List<ProductVO> products = productService.searchProducts(keyword);
+        return Result.success(products);
+    }
 }

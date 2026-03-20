@@ -62,4 +62,12 @@ public interface ProductService {
      * 清除分类列表缓存
      */
     void clearCategoriesCache();
+
+    /**
+     * 搜索商品
+     *
+     * @param keyword 搜索关键词
+     * @return 商品列表
+     */
+    List<ProductVO> searchProducts(String keyword);
 }

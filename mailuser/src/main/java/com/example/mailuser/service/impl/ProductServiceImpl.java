@@ -202,4 +202,18 @@ public class ProductServiceImpl implements ProductService {
         log.info("根据ID获取商品详情，商品ID：{}，商品：{}", id, product);
         return product;
     }
+
+    /**
+     * 搜索商品
+     *
+     * @param keyword 搜索关键词
+     * @return 商品列表
+     */
+    @Override
+    public List<ProductVO> searchProducts(String keyword) {
+        // 从数据库中搜索商品
+        List<ProductVO> products = productMapper.searchProducts(keyword);
+        log.info("搜索商品，关键词：{}，商品数量：{}", keyword, products.size());
+        return products;
+    }
 }

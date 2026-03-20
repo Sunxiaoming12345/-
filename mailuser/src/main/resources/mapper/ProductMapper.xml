@@ -99,4 +99,29 @@
         where id = #{id}
     </update>
 
+    <!-- 搜索商品 -->
+    <select id="searchProducts" resultType="com.example.mailuser.vo.ProductVO">
+        SELECT
+            p.id,
+            p.name,
+            p.description,
+            p.image_url AS imageUrl,
+            p.category_id AS categoryId,
+            c.name AS categoryName,
+            p.price,
+            p.stock,
+            p.status,
+            p.create_time AS createTime,
+            p.update_time AS updateTime
+        FROM
+            products p
+        LEFT JOIN
+            categories c ON p.category_id = c.id
+        WHERE
+            p.status = 1
+          AND (p.name LIKE CONCAT('%', #{keyword}, '%') OR p.description LIKE CONCAT('%', #{keyword}, '%'))
+        ORDER BY
+            p.create_time DESC
+    </select>
+
 </mapper>

@@ -3,7 +3,7 @@
     <header class="header">
       <div class="container">
         <div class="header-left">
-          <router-link to="/" class="logo">首页</router-link>
+          <router-link to="/home" class="logo" @click="clearSearch">首页</router-link>
         </div>
         <div class="header-center">
           <el-input
@@ -63,6 +63,10 @@ const handleSearch = () => {
 const handleLogout = () => {
   userStore.logout()
   router.push('/login')
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
 }
 </script>
 

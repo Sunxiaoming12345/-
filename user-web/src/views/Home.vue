@@ -21,33 +21,21 @@
         </router-link>
       </div>
     </div>
-    <div class="pagination">
-      <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 30, 40]"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="total"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-      />
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getProducts, getCategories, getProductsByCategory } from '@/api/products'
+import { getProducts, getCategories, getProductsByCategory, searchProducts } from '@/api/products'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const categories = ref([])
 const products = ref([])
 const activeCategory = ref('all')
-const currentPage = ref(1)
-const pageSize = ref(10)
 const total = ref(0)
+const searchKeyword = ref('')
 
 const loadCategories = async () => {
   try {
@@ -60,17 +48,30 @@ const loadCategories = async () => {
 
 const loadProducts = async () => {
   try {
-    // 对于推荐商品，直接获取所有推荐商品
-    if (activeCategory.value === 'all') {
-      const res = await getProducts()
+    // 检查是否有搜索关键词
+    if (searchKeyword.value) {
+      // 调用搜索接口
+      let res = await searchProducts(searchKeyword.value)
+      // 如果选择了具体分类，再进行分类筛选
+      if (activeCategory.value !== 'all') {
+        const categoryId = parseInt(activeCategory.value)
+        res = res.filter(product => product.categoryId === categoryId)
+      }
       products.value = res
       total.value = res.length
     } else {
-      // 对于分类商品，调用分类商品接口
-      const categoryId = parseInt(activeCategory.value)
-      const res = await getProductsByCategory(categoryId)
-      products.value = res
-      total.value = res.length
+      // 对于推荐商品，直接获取所有推荐商品
+      if (activeCategory.value === 'all') {
+        const res = await getProducts()
+        products.value = res
+        total.value = res.length
+      } else {
+        // 对于分类商品，调用分类商品接口
+        const categoryId = parseInt(activeCategory.value)
+        const res = await getProductsByCategory(categoryId)
+        products.value = res
+        total.value = res.length
+      }
     }
   } catch (error) {
     console.error('Failed to load products:', error)
@@ -78,21 +79,25 @@ const loadProducts = async () => {
 }
 
 const handleCategoryChange = () => {
-  currentPage.value = 1
+  // 切换分类时保留搜索关键词
   loadProducts()
 }
 
-const handleSizeChange = (size) => {
-  pageSize.value = size
+// 监听路由变化，处理搜索关键词
+watch(() => route.fullPath, (newPath) => {
+  // 解析路由
+  const url = new URL(newPath, window.location.origin)
+  const keyword = url.searchParams.get('keyword')
+  
+  if (keyword) {
+    searchKeyword.value = keyword
+  } else {
+    // 当没有搜索关键词时，清除搜索状态
+    searchKeyword.value = ''
+    activeCategory.value = 'all'
+  }
   loadProducts()
-}
-
-const handleCurrentChange = (current) => {
-  currentPage.value = current
-  loadProducts()
-}
-
-
+}, { immediate: true })
 
 onMounted(() => {
   loadCategories()
