@@ -15,7 +15,9 @@ import com.example.mailuser.mapper.ProductMapper;
 import com.example.mailuser.mapper.UserOrdersMapper;
 import com.example.mailuser.service.BalanceService;
 import com.example.mailuser.service.OrdersService;
+import com.example.mailuser.utils.OrderNumberUtils;
 import com.example.mailuser.vo.PrePurchaseVO;
+import com.example.mailuser.vo.UserOrderStatsVO;
 import com.example.result.PageResult;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
@@ -26,6 +28,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import com.example.constant.RabbitMQConstant;
 @Slf4j
@@ -89,10 +92,41 @@ public class OrdersServiceImpl implements OrdersService {
     @Override
     public void pay(PayDTO payDTO) {
         Long userId = BaseContext.getCurrentId();
-        log.info("支付订单：userId={}, orderId={}, paymentMethod={}", userId, payDTO.getOrderId(), payDTO.getPaymentMethod());
+        log.info("支付订单：userId={}, orderId={}, orderNumber={}, paymentMethod={}",
+                userId, payDTO.getOrderId(), payDTO.getOrderNumber(), payDTO.getPaymentMethod());
         
         // 设置用户ID到DTO中
         payDTO.setUserId(userId);
+
+        // 余额支付：发 MQ 前同步校验，否则接口永远成功而异步消费端余额不足时静默失败
+        if (Objects.equals(2, payDTO.getPaymentMethod())) {
+            // 创建订单也是异步落库，短暂重试等待订单记录
+            Orders order = null;
+            for (int attempt = 0; attempt < 15; attempt++) {
+                order = resolveOrderForPayment(payDTO, userId);
+                if (order != null) {
+                    break;
+                }
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            if (order == null) {
+                throw new RuntimeException("订单处理中，请稍后再试");
+            }
+            if (!Objects.equals(order.getUserId(), userId)) {
+                throw new RuntimeException("订单不存在");
+            }
+            if (!Objects.equals(order.getOrderStatus(), OrderStatus.WAIT_PAYMENT)) {
+                throw new RuntimeException("订单状态不允许支付");
+            }
+            if (!balanceService.checkBalance(userId, order.getTotalAmount())) {
+                throw new RuntimeException("余额不足");
+            }
+        }
         
         // 发送订单支付消息到RabbitMQ
         try {
@@ -101,7 +135,7 @@ public class OrdersServiceImpl implements OrdersService {
                     RabbitMQConstant.ORDER_PAY_ROUTING_KEY,
                     payDTO
             );
-            log.info("发送订单支付消息：userId={}, orderId={}", userId, payDTO.getOrderId());
+            log.info("发送订单支付消息：userId={}, orderId={}, orderNumber={}", userId, payDTO.getOrderId(), payDTO.getOrderNumber());
         } catch (Exception e) {
             log.error("发送订单支付消息失败：", e);
             throw new RuntimeException("支付失败");
@@ -125,10 +159,8 @@ public class OrdersServiceImpl implements OrdersService {
         // 设置用户ID到DTO中
         orderCreateDTO.setUserId(userId);
         
-        // 生成临时订单号（用于返回给前端）
-        String tempOrderNumber = userId.toString() + System.currentTimeMillis();
-        
-        // 将订单号设置到DTO中
+        // 订单编号：毫秒时间戳 + 用户ID + 4 位随机字母数字
+        String tempOrderNumber = OrderNumberUtils.generate(userId);
         orderCreateDTO.setOrderNumber(tempOrderNumber);
         
         // 发送订单创建消息到RabbitMQ
@@ -147,8 +179,7 @@ public class OrdersServiceImpl implements OrdersService {
         // 支付超时时间，使用常量定义
         Integer paymentTimeout = OrderStatus.PAYMENT_TIMEOUT_SECONDS;
         
-        // 这里返回临时生成的订单号和支付超时时间，实际订单ID会在消息消费者中生成
-        return new com.example.mailuser.vo.OrderCreateResultVO(Long.parseLong(tempOrderNumber), paymentTimeout);
+        return new com.example.mailuser.vo.OrderCreateResultVO(tempOrderNumber, paymentTimeout);
     }
 
     @Override
@@ -254,6 +285,32 @@ public class OrdersServiceImpl implements OrdersService {
         }
         
         return orderDetailVO;
+    }
+
+    /** 与 OrderPayMessageConsumer 一致的订单解析逻辑 */
+    private Orders resolveOrderForPayment(PayDTO payDTO, Long userId) {
+        Orders order = null;
+        String orderNumber = payDTO.getOrderNumber();
+        if (orderNumber != null && !orderNumber.isBlank()) {
+            order = ordersMapper.selectByOrderNumber(orderNumber.trim());
+        } else if (payDTO.getOrderId() != null) {
+            order = ordersMapper.getOrderByIdAndUserId(payDTO.getOrderId(), userId);
+            if (order == null) {
+                order = ordersMapper.selectByOrderNumber(payDTO.getOrderId().toString());
+            }
+        }
+        return order;
+    }
+
+    @Override
+    public UserOrderStatsVO getMyOrderStats() {
+        Long userId = BaseContext.getCurrentId();
+        long total = ordersMapper.countByUserId(userId);
+        BigDecimal consumption = ordersMapper.sumConsumptionByUserId(userId);
+        if (consumption == null) {
+            consumption = BigDecimal.ZERO;
+        }
+        return new UserOrderStatsVO(total, consumption);
     }
 
     // 发送库存更新消息到RabbitMQ

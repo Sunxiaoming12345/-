@@ -27,6 +27,9 @@ public interface OrdersService {
     // 获取订单详情
     com.example.mailuser.vo.OrderDetailVO getOrderDetail(Long orderId);
 
+    /** 当前用户订单统计：订单总数、总消费 */
+    com.example.mailuser.vo.UserOrderStatsVO getMyOrderStats();
+
     // 查询订单根据订单号
   /*  Orders select(String orderNumber);*/
 }

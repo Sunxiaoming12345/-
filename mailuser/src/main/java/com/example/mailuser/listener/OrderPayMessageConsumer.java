@@ -34,21 +34,21 @@ public class OrderPayMessageConsumer {
 
         try {
             Long userId = payDTO.getUserId();
-            
-            // 验证订单是否存在且属于当前用户
-            Orders order = ordersMapper.getOrderByIdAndUserId(payDTO.getOrderId(), userId);
-            
-            // 如果通过ID查询不到，尝试通过订单号查询
-            if (order == null) {
-                // 将orderId转换为字符串作为订单号查询
-                String orderNumber = payDTO.getOrderId().toString();
-                order = ordersMapper.selectByOrderNumber(orderNumber);
-                
-                // 再次检查订单是否存在且属于当前用户
-                if (order == null || !order.getUserId().equals(userId)) {
-                    log.error("订单不存在：orderId={}, userId={}", payDTO.getOrderId(), userId);
-                    return; // 直接返回，不抛出异常
+
+            Orders order = null;
+            String orderNumber = payDTO.getOrderNumber();
+            if (orderNumber != null && !orderNumber.isBlank()) {
+                order = ordersMapper.selectByOrderNumber(orderNumber.trim());
+            } else if (payDTO.getOrderId() != null) {
+                order = ordersMapper.getOrderByIdAndUserId(payDTO.getOrderId(), userId);
+                if (order == null) {
+                    order = ordersMapper.selectByOrderNumber(payDTO.getOrderId().toString());
                 }
+            }
+            if (order == null || !order.getUserId().equals(userId)) {
+                log.error("订单不存在：orderId={}, orderNumber={}, userId={}",
+                        payDTO.getOrderId(), payDTO.getOrderNumber(), userId);
+                return;
             }
             
             // 只有待支付的订单可以支付

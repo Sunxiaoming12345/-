@@ -7,6 +7,7 @@ import com.example.mailuser.dto.PrePurchase;
 import com.example.mailuser.entity.Orders;
 import com.example.mailuser.service.OrdersService;
 import com.example.mailuser.vo.PrePurchaseVO;
+import com.example.mailuser.vo.UserOrderStatsVO;
 import com.example.result.PageResult;
 import com.example.result.Result;
 import io.swagger.annotations.Api;
@@ -58,6 +59,12 @@ public class OrdersController {
         PageResult pageResult = ordersService.myOrders(myOrdersPageQueryDTO);
 
         return Result.success(pageResult);
+    }
+
+    @GetMapping("/stats")
+    @ApiOperation(value = "我的订单统计", notes = "订单总数与总消费（已付款及以上状态计入消费）")
+    public Result<UserOrderStatsVO> myOrderStats() {
+        return Result.success(ordersService.getMyOrderStats());
     }
 
     // 创建订单

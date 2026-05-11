@@ -44,4 +44,8 @@ public interface UserOrdersMapper {
     
     // 根据订单号查询订单
     Orders selectByOrderNumber(@Param("orderNumber") String orderNumber);
+
+    long countByUserId(@Param("userId") Long userId);
+
+    java.math.BigDecimal sumConsumptionByUserId(@Param("userId") Long userId);
 }

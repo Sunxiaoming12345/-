@@ -39,14 +39,14 @@
         <div class="stat-item">
           <el-icon><Tickets /></el-icon>
           <div class="stat-content">
-            <div class="stat-number">0</div>
+            <div class="stat-number">{{ orderStats.totalOrders ?? 0 }}</div>
             <div class="stat-label">全部订单</div>
           </div>
         </div>
         <div class="stat-item">
           <el-icon><Money /></el-icon>
           <div class="stat-content">
-            <div class="stat-number">¥0</div>
+            <div class="stat-number">¥{{ formatMoney(orderStats.totalConsumption) }}</div>
             <div class="stat-label">总消费</div>
           </div>
         </div>
@@ -96,10 +96,18 @@ import { useUserStore } from '@/store/user'
 import { Tickets, Money, Wallet } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getBalance } from '@/api/balance'
+import { getOrderStats } from '@/api/orders'
 
 const router = useRouter()
 const userStore = useUserStore()
 const balance = ref(0)
+const orderStats = ref({ totalOrders: 0, totalConsumption: 0 })
+
+function formatMoney(v) {
+  const n = Number(v)
+  if (Number.isNaN(n)) return '0.00'
+  return n.toFixed(2)
+}
 const dialogVisible = ref(false)
 const form = ref({
   name: '',
@@ -145,9 +153,24 @@ const fetchBalance = async () => {
   }
 }
 
+const fetchOrderStats = async () => {
+  try {
+    const res = await getOrderStats()
+    if (res) {
+      orderStats.value = {
+        totalOrders: res.totalOrders ?? 0,
+        totalConsumption: res.totalConsumption ?? 0
+      }
+    }
+  } catch (error) {
+    console.error('获取订单统计失败:', error)
+  }
+}
+
 onMounted(() => {
   userStore.fetchUserInfo()
   fetchBalance()
+  fetchOrderStats()
 })
 </script>
 

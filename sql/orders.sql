@@ -1,7 +1,7 @@
 CREATE TABLE `orders` (
                           `order_id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '订单ID',
                           `user_id` BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
-                          `order_number` VARCHAR(32) NOT NULL UNIQUE COMMENT '订单编号',
+                          `order_number` VARCHAR(48) NOT NULL UNIQUE COMMENT '订单编号',
                           `order_status` TINYINT NOT NULL DEFAULT 0 COMMENT '订单状态：0-待付款，1-已付款，2-已发货，3-已完成，4-已取消',
                           `payment_method` TINYINT NOT NULL DEFAULT 0 COMMENT '支付方式：0-支付宝，1-微信，2-银行卡',
                           `total_amount` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '订单总金额',

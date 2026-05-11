@@ -10,8 +10,10 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PayDTO {
-   //订单ID
+   /** 数据库订单主键，与订单列表/详情一致时使用 */
    private Long orderId;
+   /** 业务订单号；创建订单后立即支付时传此字段（可含字母） */
+   private String orderNumber;
    //用户ID
    private Long userId;
    //商品名称

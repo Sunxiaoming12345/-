@@ -111,11 +111,12 @@
             {{ formatCountdown(countdownSeconds) }}
           </span>
         </p>
+        <p v-if="balanceInsufficient" class="balance-warning">余额不足本次应付金额，请先充值或返回更换支付方式</p>
       </div>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="cancelBalancePayment">暂不支付</el-button>
-          <el-button type="primary" @click="confirmBalancePayment">确认支付</el-button>
+          <el-button type="primary" :disabled="balanceInsufficient" @click="confirmBalancePayment">确认支付</el-button>
         </span>
       </template>
     </el-dialog>
@@ -154,7 +155,7 @@ const shippingFee = ref(0)
 // 余额相关
 const balanceDialogVisible = ref(false)
 const userBalance = ref(0)
-const currentOrderId = ref(null)
+const currentOrderNumber = ref('')
 
 // 倒计时相关
 const countdownSeconds = ref(600) // 10分钟，默认值
@@ -171,6 +172,8 @@ const totalPrice = computed(() => {
 const actualAmount = computed(() => {
   return totalPrice.value + shippingFee.value
 })
+
+const balanceInsufficient = computed(() => Number(userBalance.value) < Number(actualAmount.value))
 
 // 加载订单商品信息
 const loadOrderItems = async () => {
@@ -305,7 +308,7 @@ const submitOrder = async () => {
 
     // 调用创建订单接口
     const res = await createOrder(orderData)
-    currentOrderId.value = res.orderId
+    currentOrderNumber.value = res.orderNumber || ''
     
     // 获取支付超时时间（秒）
     const paymentTimeout = res.paymentTimeout || 600
@@ -394,7 +397,7 @@ const clearCountdown = () => {
 
 // 确认余额支付
 const confirmBalancePayment = async () => {
-  if (!currentOrderId.value) {
+  if (!currentOrderNumber.value) {
     ElMessage.error('订单信息错误')
     return
   }
@@ -402,9 +405,8 @@ const confirmBalancePayment = async () => {
   try {
     loading.value = true
     
-    // 调用支付接口
     await payOrder({
-      orderId: currentOrderId.value,
+      orderNumber: currentOrderNumber.value,
       paymentMethod: 2
     })
     

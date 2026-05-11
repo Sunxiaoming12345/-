@@ -16,6 +16,13 @@ export function getOrders(params) {
   })
 }
 
+export function getOrderStats() {
+  return request({
+    url: '/user/orders/stats',
+    method: 'get'
+  })
+}
+
 export function getOrderDetail(id) {
     return request({
         url: `/user/orders/${id}`,

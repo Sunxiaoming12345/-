@@ -51,5 +51,16 @@
     <select id="selectByOrderNumber" parameterType="java.lang.String" resultType="com.example.mailuser.entity.Orders">
         SELECT * FROM orders WHERE order_number = #{orderNumber}
     </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*) FROM orders WHERE user_id = #{userId}
+    </select>
+
+    <!-- 总消费：已付款、已发货、已完成 -->
+    <select id="sumConsumptionByUserId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_amount), 0) FROM orders
+        WHERE user_id = #{userId}
+          AND order_status IN (1, 2, 3)
+    </select>
     
 </mapper>
