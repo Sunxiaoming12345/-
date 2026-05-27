@@ -94,7 +94,7 @@
       :close-on-click-modal="false"
       :close-on-press-escape="false"
       @open="startCountdown"
-      @close="clearCountdown"
+      @closed="onBalanceDialogClosed"
     >
       <div class="balance-info">
         <p class="balance-item">
@@ -352,10 +352,13 @@ const submitOrder = async () => {
   }
 }
 
-// 取消余额支付
+// 取消余额支付（含右上角关闭 ×，关闭动画结束后统一处理）
 const cancelBalancePayment = () => {
   balanceDialogVisible.value = false
-  // 跳转到订单列表
+}
+
+const onBalanceDialogClosed = () => {
+  clearCountdown()
   router.push('/orders')
 }
 
@@ -378,11 +381,8 @@ const startCountdown = () => {
     if (countdownSeconds.value > 0) {
       countdownSeconds.value--
     } else {
-      // 倒计时结束
-      clearCountdown()
-      balanceDialogVisible.value = false
       ElMessage.warning('订单支付超时，已自动取消')
-      router.push('/orders')
+      balanceDialogVisible.value = false
     }
   }, 1000)
 }
@@ -404,23 +404,18 @@ const confirmBalancePayment = async () => {
 
   try {
     loading.value = true
-    
+
     await payOrder({
       orderNumber: currentOrderNumber.value,
       paymentMethod: 2
     })
-    
+
     ElMessage.success('支付成功')
+    balanceDialogVisible.value = false
   } catch (error) {
-    ElMessage.error('支付失败')
     console.error('Failed to pay order:', error)
   } finally {
     loading.value = false
-    balanceDialogVisible.value = false
-    // 清除倒计时
-    clearCountdown()
-    // 无论支付成功还是失败，都跳转到订单列表
-    router.push('/orders')
   }
 }
 
@@ -534,6 +529,12 @@ onMounted(async () => {
 .payment-amount {
   font-weight: bold;
   color: #ff4d4f;
+}
+
+.balance-warning {
+  color: #f56c6c;
+  font-size: 13px;
+  margin-top: -8px;
 }
 
 .dialog-footer {

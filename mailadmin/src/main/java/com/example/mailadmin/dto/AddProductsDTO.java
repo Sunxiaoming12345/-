@@ -16,7 +16,7 @@ public class AddProductsDTO {
 
     private String imageUrl;
 
-    private Integer categoryId;
+    private Long categoryId;
 
     private BigDecimal price;
 

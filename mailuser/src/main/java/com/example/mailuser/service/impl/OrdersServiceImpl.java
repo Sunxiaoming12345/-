@@ -2,10 +2,7 @@ package com.example.mailuser.service.impl;
 
 import com.example.constant.OrderStatus;
 import com.example.context.BaseContext;
-import com.example.mailadmin.entity.Products;
 import com.example.mailadmin.entity.Payments;
-
-import com.example.mailadmin.mapper.ProductsMapper;
 import com.example.mailuser.mapper.UserPaymentMapper;
 import com.example.mailuser.dto.MyOrdersPageQueryDTO;
 import com.example.mailuser.dto.PayDTO;
@@ -26,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -100,22 +96,9 @@ public class OrdersServiceImpl implements OrdersService {
 
         // 余额支付：发 MQ 前同步校验，否则接口永远成功而异步消费端余额不足时静默失败
         if (Objects.equals(2, payDTO.getPaymentMethod())) {
-            // 创建订单也是异步落库，短暂重试等待订单记录
-            Orders order = null;
-            for (int attempt = 0; attempt < 15; attempt++) {
-                order = resolveOrderForPayment(payDTO, userId);
-                if (order != null) {
-                    break;
-                }
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
+            Orders order = resolveOrderForPayment(payDTO, userId);
             if (order == null) {
-                throw new RuntimeException("订单处理中，请稍后再试");
+                throw new RuntimeException("订单不存在");
             }
             if (!Objects.equals(order.getUserId(), userId)) {
                 throw new RuntimeException("订单不存在");
@@ -155,15 +138,12 @@ public class OrdersServiceImpl implements OrdersService {
     public com.example.mailuser.vo.OrderCreateResultVO createOrder(com.example.mailuser.dto.OrderCreateDTO orderCreateDTO) {
         Long userId = BaseContext.getCurrentId();
         log.info("创建订单：userId={}, orderData={}", userId, orderCreateDTO);
-        
-        // 设置用户ID到DTO中
+
         orderCreateDTO.setUserId(userId);
-        
-        // 订单编号：毫秒时间戳 + 用户ID + 4 位随机字母数字
+
         String tempOrderNumber = OrderNumberUtils.generate(userId);
         orderCreateDTO.setOrderNumber(tempOrderNumber);
-        
-        // 发送订单创建消息到RabbitMQ
+
         try {
             rabbitTemplate.convertAndSend(
                     RabbitMQConstant.ORDER_CREATE_EXCHANGE_NAME,
@@ -175,10 +155,8 @@ public class OrdersServiceImpl implements OrdersService {
             log.error("发送订单创建消息失败：", e);
             throw new RuntimeException("订单创建失败");
         }
-        
-        // 支付超时时间，使用常量定义
+
         Integer paymentTimeout = OrderStatus.PAYMENT_TIMEOUT_SECONDS;
-        
         return new com.example.mailuser.vo.OrderCreateResultVO(tempOrderNumber, paymentTimeout);
     }
 
